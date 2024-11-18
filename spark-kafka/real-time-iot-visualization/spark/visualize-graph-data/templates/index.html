@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IoT Data Visualization</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1>IoT Data Visualization</h1>
+    
+    <!-- Device Filter -->
+    <label for="device-select">Select Device:</label>
+    <select id="device-select" onchange="updateDeviceFilter()">
+        <option value="all">All Devices</option>
+    </select>
+    
+    <h2>Temperature Data</h2>
+    <div id="temperature-chart"></div>
+    
+    <h2>Humidity Data</h2>
+    <div id="humidity-chart"></div>
+    
+    <script>
+        // Set initial filter to "all"
+        let selectedDevice = "all";
+        
+        // Update device filter from dropdown
+        function updateDeviceFilter() {
+            selectedDevice = document.getElementById("device-select").value;
+            updateData();
+        }
+
+        // Fetch data from Flask endpoint and update the graphs
+        function updateData() {
+            fetch(`/data?device=${selectedDevice}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Update device dropdown
+                    const deviceSelect = document.getElementById("device-select");
+                    deviceSelect.innerHTML = `<option value="all">All Devices</option>`;
+                    data.devices.forEach(device => {
+                        deviceSelect.innerHTML += `<option value="${device}">${device}</option>`;
+                    });
+
+                    // Process temperature data
+                    const temperatureTrace = {
+                        x: data.temperature.map(d => new Date(d.time)),
+                        y: data.temperature.map(d => d.value),
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        name: 'Temperature',
+                        line: { color: 'red' }
+                    };
+
+                    // Process humidity data
+                    const humidityTrace = {
+                        x: data.humidity.map(d => new Date(d.time)),
+                        y: data.humidity.map(d => d.value),
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        name: 'Humidity',
+                        line: { color: 'blue' }
+                    };
+
+                    // Plot temperature graph
+                    Plotly.newPlot('temperature-chart', [temperatureTrace], {
+                        title: `Temperature Data (${selectedDevice})`,
+                        xaxis: { title: 'Time' },
+                        yaxis: { title: 'Temperature (°C)' }
+                    });
+
+                    // Plot humidity graph
+                    Plotly.newPlot('humidity-chart', [humidityTrace], {
+                        title: `Humidity Data (${selectedDevice})`,
+                        xaxis: { title: 'Time' },
+                        yaxis: { title: 'Humidity (%)' }
+                    });
+                });
+        }
+
+        // Update data every 5 seconds
+        setInterval(updateData, 5000);
+    </script>
+</body>
+</html>
